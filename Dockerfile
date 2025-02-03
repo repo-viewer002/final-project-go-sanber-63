@@ -1,39 +1,34 @@
-# Use the latest Golang base image
-FROM golang:latest AS builder
+# Build stage
+FROM golang:1.23 AS build
 
-
-# Set the work directory in the container
 WORKDIR /app
 
-# Copy dependency files
 COPY go.mod go.sum ./
-
-# Install dependencies
 RUN go mod download
 
-# Copy source code
 COPY src/ /app/src/
-
-# Adjust work directory in the container
 WORKDIR /app/src
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+# Set architecture and OS for building the Go binary
+ENV GOARCH=amd64
+ENV GOOS=linux
 
-# Start a new build stage
-FROM alpine:latest  
+# Build the Go binary
+RUN go build -o /app/out
+RUN ls -l /app  # Debugging step to check if 'out' exists
 
-# Install certificates
-RUN apk --no-cache add ca-certificates
+# Final stage: smaller image
+FROM golang:1.23-alpine
 
-# Set work directory
-WORKDIR /root/
+# Install dependencies for dynamic linking
+RUN apk --no-cache add libc6-compat
 
-# Copy the binary from the builder stage
-COPY --from=builder /app/main .
+WORKDIR /app
 
-# Expose port 8080
-EXPOSE 8080
+# Copy the built binary
+COPY --from=build /app/out .
 
-# Command to run the executable
-CMD ["./main"]
+EXPOSE 3000
+
+# Default command to run the app
+CMD ["./out"]
