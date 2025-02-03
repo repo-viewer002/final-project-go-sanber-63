@@ -1,35 +1,35 @@
-# Use an official Go runtime as a base image
-FROM golang:1.23 AS build
+# Use the latest Golang base image
+FROM golang:latest AS builder
 
-# Set the working directory inside the container
-WORKDIR /app
-
-# Copy go.mod and go.sum files first to leverage Docker cache
-COPY go.mod go.sum ./
-
-# Download dependencies (can be cached)
-RUN go mod download
-
-# Copy the src directory containing your Go files into the container
-COPY src/ /app/src/
-
-# Set the working directory to where the Go files are located
+# Set the work directory in the container
 WORKDIR /app/src
 
-# Build the Go application
-RUN go build -o /app/out
+# Copy dependency files
+COPY go.mod go.sum ./
 
-# Final stage: Create a smaller image with only the necessary files
-FROM golang:1.23-alpine
+# Install dependencies
+RUN go mod download
 
-# Set the working directory in the final image
-WORKDIR /app
+# Copy source code
+COPY . .
 
-# Copy the built binary from the build stage
-COPY --from=build /app/out .
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-# Expose the port that your Go app runs on (change the port if necessary)
-EXPOSE 3000
+# Start a new build stage
+FROM alpine:latest  
 
-# Command to run the binary
-CMD ["./out"]
+# Install certificates
+RUN apk --no-cache add ca-certificates
+
+# Set work directory
+WORKDIR /root/
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/main .
+
+# Expose port 8080
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["./main"]
