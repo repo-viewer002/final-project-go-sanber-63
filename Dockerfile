@@ -1,8 +1,9 @@
 # Use the latest Golang base image
 FROM golang:latest AS builder
 
+
 # Set the work directory in the container
-WORKDIR /app/src
+WORKDIR /app
 
 # Copy dependency files
 COPY go.mod go.sum ./
@@ -11,7 +12,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY src/ /app/src/
+
+# Adjust work directory in the container
+WORKDIR /app/src
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
