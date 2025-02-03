@@ -1,5 +1,5 @@
 # Use an official Go runtime as a base image
-FROM golang:1.18 AS build
+FROM golang:1.23 AS build
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -20,7 +20,7 @@ WORKDIR /app/src
 RUN go build -o /app/out
 
 # Final stage: Create a smaller image with only the necessary files
-FROM golang:1.18-alpine
+FROM golang:1.23-alpine
 
 # Set the working directory in the final image
 WORKDIR /app
